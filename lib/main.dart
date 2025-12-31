@@ -37,8 +37,9 @@ class MyApp extends StatelessWidget {
           child: Container(
             clipBehavior: .antiAlias,
             decoration: BoxDecoration(),
-            child: CustomPaint(
-              painter: PaintBarGraph(income: 7000, expense: 3000),
+            child: AnimatedBarGraph(
+              income: 7000,
+              expense: 3000,
               size: Size(200, 200),
             ),
           ),
@@ -48,11 +49,77 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class PaintBarGraph extends CustomPainter {
-  PaintBarGraph({required this.income, required this.expense});
+class AnimatedBarGraph extends StatefulWidget {
+  const AnimatedBarGraph({
+    super.key,
+    required this.income,
+    required this.expense,
+    required this.size,
+    this.animationDuration = const Duration(milliseconds: 500),
+  });
 
-  double expense;
-  double income;
+  final double income;
+  final double expense;
+  final Size size;
+  final Duration animationDuration;
+
+  @override
+  State<AnimatedBarGraph> createState() => _AnimatedBarGraphState();
+}
+
+class _AnimatedBarGraphState extends State<AnimatedBarGraph>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.animationDuration,
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: PaintBarGraph(
+            income: widget.income,
+            expense: widget.expense,
+            animationProgress: _animation.value,
+          ),
+          size: widget.size,
+        );
+      },
+    );
+  }
+}
+
+class PaintBarGraph extends CustomPainter {
+  PaintBarGraph({
+    required this.income,
+    required this.expense,
+    this.animationProgress = 1.0,
+  });
+
+  final double expense;
+  final double income;
+  final double animationProgress;
 
   final backGroundPaint = Paint()
     ..color = .fromRGBO(0, 0, 0, 0.05)
@@ -87,8 +154,13 @@ class PaintBarGraph extends CustomPainter {
     final total = income + expense;
 
     // If total is 0, show just the top planes (height 0)
-    final incomeHeight = total > 0 ? (income / total) * maxHeight : 0.0;
-    final expenseHeight = total > 0 ? (expense / total) * maxHeight : 0.0;
+    // Apply animation progress to scale heights
+    final incomeHeight = total > 0
+        ? (income / total) * maxHeight * animationProgress
+        : 0.0;
+    final expenseHeight = total > 0
+        ? (expense / total) * maxHeight * animationProgress
+        : 0.0;
 
     final bottomMidPoint = Offset(halfWidth, size.height);
 
@@ -129,7 +201,10 @@ class PaintBarGraph extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant PaintBarGraph oldDelegate) =>
+      oldDelegate.animationProgress != animationProgress ||
+      oldDelegate.income != income ||
+      oldDelegate.expense != expense;
 }
 
 enum _PathType { arc, line }
