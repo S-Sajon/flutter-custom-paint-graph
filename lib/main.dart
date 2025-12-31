@@ -77,7 +77,9 @@ class PaintBarGraph extends CustomPainter {
     // final groundPainter = Paint();
     // final groundPlaneY =
     //     size.height - _getAdjacentForOpposite(viewAngle, widthMidPoint);
-    final topPlaneOriginPoint = Offset(widthMidPoint, size.height - 80);
+    // Origin is now at the BOTTOM of the bar (not the top plane)
+    const barHeight = 80.0;
+    final barBottomOrigin = Offset(widthMidPoint, size.height);
     // canvas.drawLine(
     //   groundOriginPoint,
     //   _getAngledOffset(groundOriginPoint, widthMidPoint, -viewAngle),
@@ -91,45 +93,46 @@ class PaintBarGraph extends CustomPainter {
 
     const arcPercentage = 10.0;
     final topSidePathPoints = getPointsForPlanePolygon(
-      origin: topPlaneOriginPoint,
+      origin: barBottomOrigin,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
       arcPercentage: arcPercentage,
+      height: barHeight,
     );
 
     final leftSidePathPoints = getPointsForLeftSidePolygon(
-      origin: topPlaneOriginPoint,
+      origin: barBottomOrigin,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 80,
+      height: barHeight,
       arcPercentage: arcPercentage,
     );
     final rightSidePathPoints = getPointsForRightSidePolygon(
-      origin: topPlaneOriginPoint,
+      origin: barBottomOrigin,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 80,
+      height: barHeight,
       arcPercentage: arcPercentage,
     );
     final frontFacePathPoints = getPointsForFrontFacePolygon(
-      origin: topPlaneOriginPoint,
+      origin: barBottomOrigin,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 80,
+      height: barHeight,
       arcPercentage: arcPercentage,
     );
     final leftOuterCornerPoints = getPointsForLeftOuterCorner(
-      origin: topPlaneOriginPoint,
+      origin: barBottomOrigin,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 80,
+      height: barHeight,
       arcPercentage: arcPercentage,
     );
     final rightOuterCornerPoints = getPointsForRightOuterCorner(
-      origin: topPlaneOriginPoint,
+      origin: barBottomOrigin,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 80,
+      height: barHeight,
       arcPercentage: arcPercentage,
     );
 
@@ -265,35 +268,39 @@ List<(Offset, _PathType, Offset?)> getPointsForPlanePolygon({
   required double xProjectionLength,
   required double angleOfPoint1And2,
   required double arcPercentage,
+  required double height,
 }) {
+  // Origin is now at bottom of bar, so top plane origin is origin - height
+  final topPlaneOrigin = origin - Offset(0, height);
+
   final arcDiameter = xProjectionLength * (arcPercentage / 100);
   final radianAngle = _degToRadian(angleOfPoint1And2);
 
   // Original sharp corners (used as control points for rounded arcs)
   final rightCorner = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength,
     angleOfPoint1And2,
   );
   final leftCorner = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength,
     180 - angleOfPoint1And2,
   );
   final topCorner = Offset(
-    origin.dx,
-    origin.dy - 2 * math.tan(radianAngle) * xProjectionLength,
+    topPlaneOrigin.dx,
+    topPlaneOrigin.dy - 2 * math.tan(radianAngle) * xProjectionLength,
   );
-  final bottomCorner = origin;
+  final bottomCorner = topPlaneOrigin;
 
   // Points shifted inward from corners for the rounded shape
   final shiftedOrigin = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     arcDiameter,
     angleOfPoint1And2,
   );
   final secondPoint = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength - arcDiameter,
     angleOfPoint1And2,
   );
@@ -303,12 +310,12 @@ List<(Offset, _PathType, Offset?)> getPointsForPlanePolygon({
       shiftedOrigin -
       Offset(0, 2 * math.tan(radianAngle) * (xProjectionLength - arcDiameter));
   final eigthPoint = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     arcDiameter,
     180 - angleOfPoint1And2,
   );
   final seventhPoint = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength - arcDiameter,
     180 - angleOfPoint1And2,
   );
@@ -337,25 +344,29 @@ List<(Offset, _PathType, Offset?)> getPointsForLeftSidePolygon({
   required double height,
   required double arcPercentage,
 }) {
+  // Origin is now at bottom of bar, top plane origin is origin - height
+  final topPlaneOrigin = origin - Offset(0, height);
   final arcDiameter = xProjectionLength * (arcPercentage / 100);
 
-  final shiftedOrigin = _getAngledOffset(
-    origin,
+  // Top edge points (at top plane level)
+  final topInner = _getAngledOffset(
+    topPlaneOrigin,
     arcDiameter,
     180 - angleOfPoint1And2,
   );
-  final secondPoint = _getAngledOffset(
-    origin,
+  final topOuter = _getAngledOffset(
+    topPlaneOrigin,
     xProjectionLength - arcDiameter,
     180 - angleOfPoint1And2,
   );
-  final thirdPoint = secondPoint + Offset(0, height);
-  final fourthPoint = shiftedOrigin + Offset(0, height);
+  // Bottom edge points (at origin level)
+  final bottomOuter = topOuter + Offset(0, height);
+  final bottomInner = topInner + Offset(0, height);
   return [
-    (shiftedOrigin, .line, null),
-    (secondPoint, .line, null),
-    (thirdPoint, .line, null),
-    (fourthPoint, .line, null),
+    (topInner, .line, null),
+    (topOuter, .line, null),
+    (bottomOuter, .line, null),
+    (bottomInner, .line, null),
   ];
 }
 
@@ -366,24 +377,29 @@ List<(Offset, _PathType, Offset?)> getPointsForRightSidePolygon({
   required double height,
   required double arcPercentage,
 }) {
+  // Origin is now at bottom of bar, top plane origin is origin - height
+  final topPlaneOrigin = origin - Offset(0, height);
   final arcDiameter = xProjectionLength * (arcPercentage / 100);
-  final shiftedOrigin = _getAngledOffset(
-    origin,
+
+  // Top edge points (at top plane level)
+  final topInner = _getAngledOffset(
+    topPlaneOrigin,
     arcDiameter,
     angleOfPoint1And2,
   );
-  final secondPoint = _getAngledOffset(
-    origin,
+  final topOuter = _getAngledOffset(
+    topPlaneOrigin,
     xProjectionLength - arcDiameter,
     angleOfPoint1And2,
   );
-  final thirdPoint = secondPoint + Offset(0, height);
-  final fourthPoint = shiftedOrigin + Offset(0, height);
+  // Bottom edge points (at origin level)
+  final bottomOuter = topOuter + Offset(0, height);
+  final bottomInner = topInner + Offset(0, height);
   return [
-    (shiftedOrigin, .line, null),
-    (secondPoint, .line, null),
-    (thirdPoint, .line, null),
-    (fourthPoint, .line, null),
+    (topInner, .line, null),
+    (topOuter, .line, null),
+    (bottomOuter, .line, null),
+    (bottomInner, .line, null),
   ];
 }
 
@@ -395,22 +411,29 @@ List<(Offset, _PathType, Offset?)> getPointsForFrontFacePolygon({
   required double height,
   required double arcPercentage,
 }) {
+  // Origin is now at bottom of bar, top plane origin is origin - height
+  final topPlaneOrigin = origin - Offset(0, height);
   final arcDiameter = xProjectionLength * (arcPercentage / 100);
 
-  // Top corners (match the inner edges of top plane's bottom corner)
-  final topRight = _getAngledOffset(origin, arcDiameter, angleOfPoint1And2);
+  // Top corners (at top plane level)
+  final topRight = _getAngledOffset(
+    topPlaneOrigin,
+    arcDiameter,
+    angleOfPoint1And2,
+  );
   final topLeft = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     arcDiameter,
     180 - angleOfPoint1And2,
   );
 
-  // Bottom corners
+  // Bottom corners (at origin level)
   final bottomRight = topRight + Offset(0, height);
   final bottomLeft = topLeft + Offset(0, height);
 
-  // Control point for bottom arc (the sharp corner that would be at origin + height)
-  final bottomCorner = origin + Offset(0, height);
+  // Control points for arcs
+  final topCorner = topPlaneOrigin; // Top arc control point
+  final bottomCorner = origin; // Bottom arc control point
 
   return [
     (topRight, .line, null),
@@ -420,12 +443,12 @@ List<(Offset, _PathType, Offset?)> getPointsForFrontFacePolygon({
     (
       topRight,
       .arc,
-      origin,
+      topCorner,
     ), // Arc around top corner (matches top plane's bottom arc)
   ];
 }
 
-/// Left outer corner - extends the left corner arc down (outer half only)
+/// Left outer corner - extends the left corner arc down (inner half only)
 List<(Offset, _PathType, Offset?)> getPointsForLeftOuterCorner({
   required Offset origin,
   required double xProjectionLength,
@@ -433,42 +456,44 @@ List<(Offset, _PathType, Offset?)> getPointsForLeftOuterCorner({
   required double height,
   required double arcPercentage,
 }) {
+  // Origin is now at bottom of bar, top plane origin is origin - height
+  final topPlaneOrigin = origin - Offset(0, height);
   final arcDiameter = xProjectionLength * (arcPercentage / 100);
   final radianAngle = _degToRadian(angleOfPoint1And2);
 
-  // Left corner (control point for arcs)
+  // Left corner (control point for arcs) - at top plane level
   final leftCorner = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength,
     180 - angleOfPoint1And2,
   );
 
-  // Top arc points (seventhPoint to sixthPoint around leftCorner)
+  // Top arc points (at top plane level)
   final seventhPoint = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength - arcDiameter,
     180 - angleOfPoint1And2,
   );
   final sixthPoint =
       seventhPoint - Offset(0, 2 * math.tan(radianAngle) * arcDiameter);
 
-  // Split the top arc - we only want the OUTER half (midpoint to sixthPoint)
+  // Split the top arc
   final topArcSplit = _splitQuadraticBezier(
     seventhPoint,
     leftCorner,
     sixthPoint,
   );
 
-  // Bottom arc points
+  // Bottom arc points (at origin level)
   final bottomCorner = leftCorner + Offset(0, height);
-  final bottomOuter = sixthPoint + Offset(0, height);
   final bottomMidpoint = topArcSplit.midpoint + Offset(0, height);
+  final bottomInner = seventhPoint + Offset(0, height);
 
-  // Split the bottom arc - we only want the OUTER half (bottomMidpoint to bottomOuter)
+  // Split the bottom arc
   final bottomArcSplit = _splitQuadraticBezier(
-    seventhPoint + Offset(0, height),
+    bottomInner,
     bottomCorner,
-    bottomOuter,
+    sixthPoint + Offset(0, height),
   );
 
   return [
@@ -480,7 +505,7 @@ List<(Offset, _PathType, Offset?)> getPointsForLeftOuterCorner({
     ), // Inner half of top arc (to midpoint)
     (bottomMidpoint, .line, null), // Line down
     (
-      seventhPoint + Offset(0, height),
+      bottomInner,
       .arc,
       bottomArcSplit.controlFirst,
     ), // Inner half of bottom arc
@@ -488,7 +513,7 @@ List<(Offset, _PathType, Offset?)> getPointsForLeftOuterCorner({
   ];
 }
 
-/// Right outer corner - extends the right corner arc down (outer half only)
+/// Right outer corner - extends the right corner arc down (inner half only)
 List<(Offset, _PathType, Offset?)> getPointsForRightOuterCorner({
   required Offset origin,
   required double xProjectionLength,
@@ -496,42 +521,44 @@ List<(Offset, _PathType, Offset?)> getPointsForRightOuterCorner({
   required double height,
   required double arcPercentage,
 }) {
+  // Origin is now at bottom of bar, top plane origin is origin - height
+  final topPlaneOrigin = origin - Offset(0, height);
   final arcDiameter = xProjectionLength * (arcPercentage / 100);
   final radianAngle = _degToRadian(angleOfPoint1And2);
 
-  // Right corner (control point for arcs)
+  // Right corner (control point for arcs) - at top plane level
   final rightCorner = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength,
     angleOfPoint1And2,
   );
 
-  // Top arc points (secondPoint to thirdPoint around rightCorner)
+  // Top arc points (at top plane level)
   final secondPoint = _getAngledOffset(
-    origin,
+    topPlaneOrigin,
     xProjectionLength - arcDiameter,
     angleOfPoint1And2,
   );
   final thirdPoint =
       secondPoint - Offset(0, 2 * math.tan(radianAngle) * arcDiameter);
 
-  // Split the top arc - we only want the OUTER half (midpoint to thirdPoint)
+  // Split the top arc
   final topArcSplit = _splitQuadraticBezier(
     secondPoint,
     rightCorner,
     thirdPoint,
   );
 
-  // Bottom arc points
+  // Bottom arc points (at origin level)
   final bottomCorner = rightCorner + Offset(0, height);
-  final bottomOuter = thirdPoint + Offset(0, height);
   final bottomMidpoint = topArcSplit.midpoint + Offset(0, height);
+  final bottomInner = secondPoint + Offset(0, height);
 
-  // Split the bottom arc - we only want the OUTER half (bottomMidpoint to bottomOuter)
+  // Split the bottom arc
   final bottomArcSplit = _splitQuadraticBezier(
-    secondPoint + Offset(0, height),
+    bottomInner,
     bottomCorner,
-    bottomOuter,
+    thirdPoint + Offset(0, height),
   );
 
   return [
@@ -543,7 +570,7 @@ List<(Offset, _PathType, Offset?)> getPointsForRightOuterCorner({
     ), // Inner half of top arc (to midpoint)
     (bottomMidpoint, .line, null), // Line down
     (
-      secondPoint + Offset(0, height),
+      bottomInner,
       .arc,
       bottomArcSplit.controlFirst,
     ), // Inner half of bottom arc
