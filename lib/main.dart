@@ -96,32 +96,36 @@ class PaintBarGraph extends CustomPainter {
     final incomeBarYposition =
         size.height - math.tan(viewAngleRadian) * halfWidth / 3;
     // Draw income bar (left side)
-    draw3DBar(
-      canvas: canvas,
-      painter: barPaint,
-      origin: Offset(incomeBarXposition, incomeBarYposition),
-      height: incomeHeight,
-      width: barWidth,
-      topGradient: [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
-      leftGradient: [Color(0xFF93E3FC), Color(0xFF93AAFC)],
-      rightGradient: [Color(0xFF5844D7), Color(0xFF6580E1)],
-      viewAngle: viewAngle,
-      arcPercentage: 10,
-    );
+    if (income > 0) {
+      draw3DBar(
+        canvas: canvas,
+        painter: barPaint,
+        origin: Offset(incomeBarXposition, incomeBarYposition),
+        height: incomeHeight,
+        width: barWidth,
+        topGradient: [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
+        leftGradient: [Color(0xFF93E3FC), Color(0xFF93AAFC)],
+        rightGradient: [Color(0xFF5844D7), Color(0xFF6580E1)],
+        viewAngle: viewAngle,
+        arcPercentage: 10,
+      );
+    }
 
     // Draw expense bar (right side)
-    draw3DBar(
-      canvas: canvas,
-      painter: barPaint,
-      origin: bottomMidPoint,
-      height: expenseHeight,
-      width: barWidth,
-      topGradient: [Color(0xFFFFD5D5), Color(0xFFFDBDC4)],
-      leftGradient: [Color(0xFFFCE393), Color(0xFFFCAA93)],
-      rightGradient: [Color(0xFFD75444), Color(0xFFE16580)],
-      viewAngle: viewAngle,
-      arcPercentage: 10,
-    );
+    if (expense > 0) {
+      draw3DBar(
+        canvas: canvas,
+        painter: barPaint,
+        origin: bottomMidPoint,
+        height: expenseHeight,
+        width: barWidth,
+        topGradient: [Color(0xFFFFE5D5), Color(0xFFFDBDCB)],
+        leftGradient: [Color(0xFFFC93E3), Color(0xFFFC93AA)],
+        rightGradient: [Color(0xFFD75844), Color(0xFFE16580)],
+        viewAngle: viewAngle,
+        arcPercentage: 10,
+      );
+    }
   }
 
   @override
