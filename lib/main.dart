@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
             clipBehavior: .antiAlias,
             decoration: BoxDecoration(),
             child: CustomPaint(
-              painter: PaintBarGraph(income: 7000, expense: 0),
+              painter: PaintBarGraph(income: 7000, expense: 3000),
               size: Size(200, 200),
             ),
           ),
@@ -59,10 +59,12 @@ class PaintBarGraph extends CustomPainter {
     ..strokeWidth = 2
     ..style = .stroke;
 
+  final barPaint = Paint()..style = .fill;
+
   @override
   void paint(Canvas canvas, Size size) {
     const double viewAngle = 15;
-    final widthMidPoint = size.width / 2;
+    final halfWidth = size.width / 2;
 
     for (var y in List.generate(
       5,
@@ -75,23 +77,29 @@ class PaintBarGraph extends CustomPainter {
     }
 
     // Bar width - each bar gets half the canvas width
-    final barWidth = widthMidPoint;
+    final barWidth = halfWidth + halfWidth / 3;
+    final viewAngleRadian = _degToRadian(viewAngle);
 
     // Calculate proportional heights
     // Account for top plane projection (extends above bar due to isometric angle)
-    final topPlaneProjection =
-        2 * math.tan(_degToRadian(viewAngle)) * (barWidth / 2);
-    final maxHeight = size.height - topPlaneProjection;
+    final topPlaneProjection = 2 * math.tan(viewAngleRadian) * (barWidth / 2);
+    final maxHeight = size.height - topPlaneProjection - topPlaneProjection / 2;
     final total = income + expense;
 
     // If total is 0, show just the top planes (height 0)
     final incomeHeight = total > 0 ? (income / total) * maxHeight : 0.0;
     final expenseHeight = total > 0 ? (expense / total) * maxHeight : 0.0;
 
+    final bottomMidPoint = Offset(halfWidth, size.height);
+
+    final incomeBarXposition = halfWidth + halfWidth / 3;
+    final incomeBarYposition =
+        size.height - math.tan(viewAngleRadian) * halfWidth / 3;
     // Draw income bar (left side)
     draw3DBar(
       canvas: canvas,
-      origin: Offset(widthMidPoint / 2, size.height),
+      painter: barPaint,
+      origin: Offset(incomeBarXposition, incomeBarYposition),
       height: incomeHeight,
       width: barWidth,
       topGradient: [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
@@ -104,7 +112,8 @@ class PaintBarGraph extends CustomPainter {
     // Draw expense bar (right side)
     draw3DBar(
       canvas: canvas,
-      origin: Offset(widthMidPoint + widthMidPoint / 2, size.height),
+      painter: barPaint,
+      origin: bottomMidPoint,
       height: expenseHeight,
       width: barWidth,
       topGradient: [Color(0xFFFFD5D5), Color(0xFFFDBDC4)],
@@ -163,6 +172,7 @@ double _degToRadian(double degree) {
 /// [rightGradient] - Gradient colors for right side [start, end]
 void draw3DBar({
   required Canvas canvas,
+  required Paint painter,
   required Offset origin,
   required double height,
   required double width,
@@ -230,8 +240,6 @@ void draw3DBar({
   final rightOuterCornerPath = _getPathForPoints(rightOuterCornerPoints);
 
   // Draw all faces
-  final painter = Paint()..style = PaintingStyle.fill;
-
   // Top plane
   painter.shader = ui.Gradient.linear(
     topSidePathPoints[0].$1,
