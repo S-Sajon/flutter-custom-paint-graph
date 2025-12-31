@@ -139,8 +139,8 @@ class PaintBarGraph extends CustomPainter {
     );
     canvas.drawPath(leftSidePath, planePainter);
     planePainter.shader = ui.Gradient.linear(
-      rightSidePathPoints[1].$1,
       rightSidePathPoints[0].$1,
+      rightSidePathPoints[1].$1,
       [Color(0xFF5844D7), Color(0xFF6580E1)],
     );
     canvas.drawPath(rightSidePath, planePainter);
