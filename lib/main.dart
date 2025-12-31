@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
             clipBehavior: .antiAlias,
             decoration: BoxDecoration(),
             child: CustomPaint(
-              painter: PaintBarGraph(income: 0, expense: 0),
+              painter: PaintBarGraph(income: 7000, expense: 0),
               size: Size(200, 200),
             ),
           ),
@@ -74,18 +74,42 @@ class PaintBarGraph extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), backGroundPaint);
     }
 
-    // final groundPainter = Paint();
-    // final groundPlaneY =
-    //     size.height - _getAdjacentForOpposite(viewAngle, widthMidPoint);
-    // Draw the 3D bar using the reusable function
+    // Bar width - each bar gets half the canvas width
+    final barWidth = widthMidPoint;
+
+    // Calculate proportional heights
+    // Account for top plane projection (extends above bar due to isometric angle)
+    final topPlaneProjection =
+        2 * math.tan(_degToRadian(viewAngle)) * (barWidth / 2);
+    final maxHeight = size.height - topPlaneProjection;
+    final total = income + expense;
+
+    // If total is 0, show just the top planes (height 0)
+    final incomeHeight = total > 0 ? (income / total) * maxHeight : 0.0;
+    final expenseHeight = total > 0 ? (expense / total) * maxHeight : 0.0;
+
+    // Draw income bar (left side)
     draw3DBar(
       canvas: canvas,
-      origin: Offset(widthMidPoint + widthMidPoint / 2, size.height),
-      height: 80,
-      width: widthMidPoint,
+      origin: Offset(widthMidPoint / 2, size.height),
+      height: incomeHeight,
+      width: barWidth,
       topGradient: [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
       leftGradient: [Color(0xFF93E3FC), Color(0xFF93AAFC)],
       rightGradient: [Color(0xFF5844D7), Color(0xFF6580E1)],
+      viewAngle: viewAngle,
+      arcPercentage: 10,
+    );
+
+    // Draw expense bar (right side)
+    draw3DBar(
+      canvas: canvas,
+      origin: Offset(widthMidPoint + widthMidPoint / 2, size.height),
+      height: expenseHeight,
+      width: barWidth,
+      topGradient: [Color(0xFFFFD5D5), Color(0xFFFDBDC4)],
+      leftGradient: [Color(0xFFFCE393), Color(0xFFFCAA93)],
+      rightGradient: [Color(0xFFD75444), Color(0xFFE16580)],
       viewAngle: viewAngle,
       arcPercentage: 10,
     );
