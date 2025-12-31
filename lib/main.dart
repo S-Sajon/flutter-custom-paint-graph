@@ -77,116 +77,18 @@ class PaintBarGraph extends CustomPainter {
     // final groundPainter = Paint();
     // final groundPlaneY =
     //     size.height - _getAdjacentForOpposite(viewAngle, widthMidPoint);
-    // Origin is now at the BOTTOM of the bar (not the top plane)
-    const barHeight = 80.0;
-    final barBottomOrigin = Offset(widthMidPoint, size.height);
-    // canvas.drawLine(
-    //   groundOriginPoint,
-    //   _getAngledOffset(groundOriginPoint, widthMidPoint, -viewAngle),
-    //   groundPainter,
-    // );
-    // canvas.drawLine(
-    //   groundOriginPoint,
-    //   _getAngledOffset(groundOriginPoint, widthMidPoint, (180 + viewAngle)),
-    //   groundPainter,
-    // );
-
-    const arcPercentage = 10.0;
-    final topSidePathPoints = getPointsForPlanePolygon(
-      origin: barBottomOrigin,
-      xProjectionLength: widthMidPoint,
-      angleOfPoint1And2: viewAngle,
-      arcPercentage: arcPercentage,
-      height: barHeight,
+    // Draw the 3D bar using the reusable function
+    draw3DBar(
+      canvas: canvas,
+      origin: Offset(widthMidPoint + widthMidPoint / 2, size.height),
+      height: 80,
+      width: widthMidPoint,
+      topGradient: [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
+      leftGradient: [Color(0xFF93E3FC), Color(0xFF93AAFC)],
+      rightGradient: [Color(0xFF5844D7), Color(0xFF6580E1)],
+      viewAngle: viewAngle,
+      arcPercentage: 10,
     );
-
-    final leftSidePathPoints = getPointsForLeftSidePolygon(
-      origin: barBottomOrigin,
-      xProjectionLength: widthMidPoint,
-      angleOfPoint1And2: viewAngle,
-      height: barHeight,
-      arcPercentage: arcPercentage,
-    );
-    final rightSidePathPoints = getPointsForRightSidePolygon(
-      origin: barBottomOrigin,
-      xProjectionLength: widthMidPoint,
-      angleOfPoint1And2: viewAngle,
-      height: barHeight,
-      arcPercentage: arcPercentage,
-    );
-    final frontFacePathPoints = getPointsForFrontFacePolygon(
-      origin: barBottomOrigin,
-      xProjectionLength: widthMidPoint,
-      angleOfPoint1And2: viewAngle,
-      height: barHeight,
-      arcPercentage: arcPercentage,
-    );
-    final leftOuterCornerPoints = getPointsForLeftOuterCorner(
-      origin: barBottomOrigin,
-      xProjectionLength: widthMidPoint,
-      angleOfPoint1And2: viewAngle,
-      height: barHeight,
-      arcPercentage: arcPercentage,
-    );
-    final rightOuterCornerPoints = getPointsForRightOuterCorner(
-      origin: barBottomOrigin,
-      xProjectionLength: widthMidPoint,
-      angleOfPoint1And2: viewAngle,
-      height: barHeight,
-      arcPercentage: arcPercentage,
-    );
-
-    final topPlanePath = _getPathForPoints(topSidePathPoints);
-    final leftSidePath = _getPathForPoints(leftSidePathPoints);
-    final rightSidePath = _getPathForPoints(rightSidePathPoints);
-    final frontFacePath = _getPathForPoints(frontFacePathPoints);
-    final leftOuterCornerPath = _getPathForPoints(leftOuterCornerPoints);
-    final rightOuterCornerPath = _getPathForPoints(rightOuterCornerPoints);
-
-    final planePainter = Paint()
-      ..shader = ui.Gradient.linear(
-        topSidePathPoints[0].$1,
-        topSidePathPoints[3].$1,
-        [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
-      )
-      ..style = .fill;
-    canvas.drawPath(topPlanePath, planePainter);
-    planePainter.shader = ui.Gradient.linear(
-      leftSidePathPoints[1].$1,
-      leftSidePathPoints[0].$1,
-      [Color(0xFF93E3FC), Color(0xFF93AAFC)],
-    );
-    canvas.drawPath(leftSidePath, planePainter);
-    planePainter.shader = ui.Gradient.linear(
-      rightSidePathPoints[0].$1,
-      rightSidePathPoints[1].$1,
-      [Color(0xFF5844D7), Color(0xFF6580E1)],
-    );
-    canvas.drawPath(rightSidePath, planePainter);
-
-    planePainter.shader = ui.Gradient.linear(
-      frontFacePathPoints[3].$1,
-      frontFacePathPoints[0].$1,
-      [Color(0xFF5844D7), Color(0xFF6580E1)],
-    );
-    canvas.drawPath(frontFacePath, planePainter);
-
-    planePainter.shader = ui.Gradient.linear(
-      leftOuterCornerPoints[1].$1,
-      leftOuterCornerPoints[0].$1,
-      [Color(0xFF93E3FC), Color(0xFF93AAFC)],
-    );
-    canvas.drawPath(leftOuterCornerPath, planePainter);
-
-    planePainter.shader = ui.Gradient.linear(
-      rightOuterCornerPoints[0].$1,
-      rightOuterCornerPoints[1].$1,
-      [Color(0xFF5844D7), Color(0xFF6580E1)],
-    );
-    canvas.drawPath(rightOuterCornerPath, planePainter);
-
-    // canvas.drawRRect(RRect.fromRectAndCorners(Rect.fromPoints(a, b)), paint)
-    // final rectPainter = Paint();
   }
 
   @override
@@ -226,6 +128,133 @@ Path _getPathForPoints(List<(Offset, _PathType, Offset?)> points) {
 
 double _degToRadian(double degree) {
   return degree * math.pi / 180;
+}
+
+/// Draws a 3D bar with rounded corners
+/// [origin] - Bottom center point of the bar
+/// [height] - Height of the bar (extends upward from origin)
+/// [width] - Half-width of the bar (xProjectionLength)
+/// [topGradient] - Gradient colors for top plane [start, end]
+/// [leftGradient] - Gradient colors for left side [start, end]
+/// [rightGradient] - Gradient colors for right side [start, end]
+void draw3DBar({
+  required Canvas canvas,
+  required Offset origin,
+  required double height,
+  required double width,
+  required List<Color> topGradient,
+  required List<Color> leftGradient,
+  required List<Color> rightGradient,
+  double viewAngle = 15,
+  double arcPercentage = 10,
+}) {
+  // Generate all polygon points
+  final topSidePathPoints = getPointsForPlanePolygon(
+    origin: origin,
+    xProjectionLength: width / 2,
+    angleOfPoint1And2: viewAngle,
+    arcPercentage: arcPercentage,
+    height: height,
+  );
+
+  final leftSidePathPoints = getPointsForLeftSidePolygon(
+    origin: origin,
+    xProjectionLength: width / 2,
+    angleOfPoint1And2: viewAngle,
+    height: height,
+    arcPercentage: arcPercentage,
+  );
+
+  final rightSidePathPoints = getPointsForRightSidePolygon(
+    origin: origin,
+    xProjectionLength: width / 2,
+    angleOfPoint1And2: viewAngle,
+    height: height,
+    arcPercentage: arcPercentage,
+  );
+
+  final frontFacePathPoints = getPointsForFrontFacePolygon(
+    origin: origin,
+    xProjectionLength: width / 2,
+    angleOfPoint1And2: viewAngle,
+    height: height,
+    arcPercentage: arcPercentage,
+  );
+
+  final leftOuterCornerPoints = getPointsForLeftOuterCorner(
+    origin: origin,
+    xProjectionLength: width / 2,
+    angleOfPoint1And2: viewAngle,
+    height: height,
+    arcPercentage: arcPercentage,
+  );
+
+  final rightOuterCornerPoints = getPointsForRightOuterCorner(
+    origin: origin,
+    xProjectionLength: width / 2,
+    angleOfPoint1And2: viewAngle,
+    height: height,
+    arcPercentage: arcPercentage,
+  );
+
+  // Generate paths
+  final topPlanePath = _getPathForPoints(topSidePathPoints);
+  final leftSidePath = _getPathForPoints(leftSidePathPoints);
+  final rightSidePath = _getPathForPoints(rightSidePathPoints);
+  final frontFacePath = _getPathForPoints(frontFacePathPoints);
+  final leftOuterCornerPath = _getPathForPoints(leftOuterCornerPoints);
+  final rightOuterCornerPath = _getPathForPoints(rightOuterCornerPoints);
+
+  // Draw all faces
+  final painter = Paint()..style = PaintingStyle.fill;
+
+  // Top plane
+  painter.shader = ui.Gradient.linear(
+    topSidePathPoints[0].$1,
+    topSidePathPoints[3].$1,
+    topGradient,
+  );
+  canvas.drawPath(topPlanePath, painter);
+
+  // Left side
+  painter.shader = ui.Gradient.linear(
+    leftSidePathPoints[1].$1,
+    leftSidePathPoints[0].$1,
+    leftGradient,
+  );
+  canvas.drawPath(leftSidePath, painter);
+
+  // Right side
+  painter.shader = ui.Gradient.linear(
+    rightSidePathPoints[0].$1,
+    rightSidePathPoints[1].$1,
+    rightGradient,
+  );
+  canvas.drawPath(rightSidePath, painter);
+
+  // Front face (uses right gradient)
+  painter.shader = ui.Gradient.linear(
+    frontFacePathPoints[3].$1,
+    frontFacePathPoints[0].$1,
+    rightGradient,
+  );
+  canvas.drawPath(frontFacePath, painter);
+
+  // Left outer corner (uses left gradient)
+  painter.shader = ui.Gradient.linear(
+    leftOuterCornerPoints[1].$1,
+    leftOuterCornerPoints[0].$1,
+    leftGradient,
+  );
+  canvas.drawPath(leftOuterCornerPath, painter);
+
+  // Right outer corner (uses right gradient)
+  painter.shader = ui.Gradient.linear(
+    rightOuterCornerPoints[0].$1,
+    rightOuterCornerPoints[1].$1,
+    rightGradient,
+  );
+  canvas.drawPath(rightOuterCornerPath, painter);
 }
 
 /// Calculate the midpoint of a quadratic bezier curve at t=0.5
