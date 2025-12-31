@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
           child: Container(
             clipBehavior: .antiAlias,
             decoration: BoxDecoration(),
-            child: AnimatedBarGraph(
+            child: AnimatedExpenditureBarGraph(
               income: 7000,
               expense: 3000,
               size: Size(200, 200),
@@ -49,8 +49,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class AnimatedBarGraph extends StatefulWidget {
-  const AnimatedBarGraph({
+class AnimatedExpenditureBarGraph extends StatefulWidget {
+  const AnimatedExpenditureBarGraph({
     super.key,
     required this.income,
     required this.expense,
@@ -64,10 +64,10 @@ class AnimatedBarGraph extends StatefulWidget {
   final Duration animationDuration;
 
   @override
-  State<AnimatedBarGraph> createState() => _AnimatedBarGraphState();
+  State<AnimatedExpenditureBarGraph> createState() => _AnimatedExpenditureBarGraphState();
 }
 
-class _AnimatedBarGraphState extends State<AnimatedBarGraph>
+class _AnimatedExpenditureBarGraphState extends State<AnimatedExpenditureBarGraph>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -98,7 +98,7 @@ class _AnimatedBarGraphState extends State<AnimatedBarGraph>
       animation: _animation,
       builder: (context, child) {
         return CustomPaint(
-          painter: PaintBarGraph(
+          painter: PaintExpenditureBarGraph(
             income: widget.income,
             expense: widget.expense,
             animationProgress: _animation.value,
@@ -110,8 +110,8 @@ class _AnimatedBarGraphState extends State<AnimatedBarGraph>
   }
 }
 
-class PaintBarGraph extends CustomPainter {
-  PaintBarGraph({
+class PaintExpenditureBarGraph extends CustomPainter {
+  PaintExpenditureBarGraph({
     required this.income,
     required this.expense,
     this.animationProgress = 1.0,
@@ -201,7 +201,7 @@ class PaintBarGraph extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant PaintBarGraph oldDelegate) =>
+  bool shouldRepaint(covariant PaintExpenditureBarGraph oldDelegate) =>
       oldDelegate.animationProgress != animationProgress ||
       oldDelegate.income != income ||
       oldDelegate.expense != expense;
