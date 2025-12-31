@@ -71,7 +71,7 @@ class PaintBarGraph extends CustomPainter {
     // final groundPainter = Paint();
     // final groundPlaneY =
     //     size.height - _getAdjacentForOpposite(viewAngle, widthMidPoint);
-    final groundOriginPoint = Offset(widthMidPoint, size.height - 40);
+    final topPlaneOriginPoint = Offset(widthMidPoint, size.height - 80);
     // canvas.drawLine(
     //   groundOriginPoint,
     //   _getAngledOffset(groundOriginPoint, widthMidPoint, -viewAngle),
@@ -82,28 +82,49 @@ class PaintBarGraph extends CustomPainter {
     //   _getAngledOffset(groundOriginPoint, widthMidPoint, (180 + viewAngle)),
     //   groundPainter,
     // );
-    List<Offset> points = getPointsForPolygon(
-      groundOriginPoint,
+    List<Offset> topSidePathPoints = getPointsForPlanePolygon(
+      topPlaneOriginPoint,
       widthMidPoint,
       viewAngle,
     );
 
-    final planePath = Path();
-    if (points.isNotEmpty) {
-      planePath.moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        planePath.lineTo(points[i].dx, points[i].dy);
-      }
-      planePath.close();
-    }
+    final leftSidePathPoints = getPointsForLeftSidePolygon(
+      topPlaneOriginPoint,
+      widthMidPoint,
+      viewAngle,
+      40,
+    );
+    final rightSidePathPoints = getPointsForRightSidePolygon(
+      topPlaneOriginPoint,
+      widthMidPoint,
+      viewAngle,
+      40,
+    );
+
+    final topPlanePath = _getPathForPoints(topSidePathPoints);
+    final leftSidePath = _getPathForPoints(leftSidePathPoints);
+    final rightSidePath = _getPathForPoints(rightSidePathPoints);
 
     final planePainter = Paint()
-      ..shader = ui.Gradient.linear(points[3], points[1], [
-        Color(0xFFE5D5FF),
-        Color(0xFFBDCBFD),
-      ])
+      ..shader = ui.Gradient.linear(
+        topSidePathPoints[3],
+        topSidePathPoints[1],
+        [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
+      )
       ..style = .fill;
-    canvas.drawPath(planePath, planePainter);
+    canvas.drawPath(topPlanePath, planePainter);
+    planePainter.shader = ui.Gradient.linear(
+      leftSidePathPoints[1],
+      leftSidePathPoints[0],
+      [Color(0xFF93E3FC), Color(0xFF93AAFC)],
+    );
+    canvas.drawPath(leftSidePath, planePainter);
+    planePainter.shader = ui.Gradient.linear(
+      leftSidePathPoints[1],
+      leftSidePathPoints[0],
+      [Color(0xFF5844D7), Color(0xFF6580E1)],
+    );
+    canvas.drawPath(rightSidePath, planePainter);
 
     // canvas.drawRRect(RRect.fromRectAndCorners(Rect.fromPoints(a, b)), paint)
     // final rectPainter = Paint();
@@ -111,6 +132,18 @@ class PaintBarGraph extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+Path _getPathForPoints(List<Offset> points) {
+  final path = Path();
+  if (points.isNotEmpty) {
+    path.moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+    path.close();
+  }
+  return path;
 }
 
 double _degToRadian(double degree) {
@@ -126,7 +159,7 @@ Offset _getAngledOffset(Offset origin, double oppositeLength, double angle) {
   );
 }
 
-List<Offset> getPointsForPolygon(
+List<Offset> getPointsForPlanePolygon(
   Offset origin,
   double xProjectionLength,
   double angleOfPoint1And2,
@@ -142,4 +175,36 @@ List<Offset> getPointsForPolygon(
     _getAngledOffset(origin, xProjectionLength, 180 - angleOfPoint1And2),
     origin,
   ];
+}
+
+List<Offset> getPointsForLeftSidePolygon(
+  Offset origin,
+  double xProjectionLength,
+  double angleOfPoint1And2,
+  double height,
+) {
+  final secondPoint = _getAngledOffset(
+    origin,
+    xProjectionLength,
+    180 - angleOfPoint1And2,
+  );
+  final thirdPoint = secondPoint + Offset(0, height);
+  final fourthPoint = origin + Offset(0, height);
+  return [origin, secondPoint, thirdPoint, fourthPoint, origin];
+}
+
+List<Offset> getPointsForRightSidePolygon(
+  Offset origin,
+  double xProjectionLength,
+  double angleOfPoint1And2,
+  double height,
+) {
+  final secondPoint = _getAngledOffset(
+    origin,
+    xProjectionLength,
+    angleOfPoint1And2,
+  );
+  final thirdPoint = secondPoint + Offset(0, height);
+  final fourthPoint = origin + Offset(0, height);
+  return [origin, secondPoint, thirdPoint, fourthPoint, origin];
 }
