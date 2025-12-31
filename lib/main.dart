@@ -101,25 +101,33 @@ class PaintBarGraph extends CustomPainter {
       origin: topPlaneOriginPoint,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 40,
+      height: 80,
       arcPercentage: arcPercentage,
     );
     final rightSidePathPoints = getPointsForRightSidePolygon(
       origin: topPlaneOriginPoint,
       xProjectionLength: widthMidPoint,
       angleOfPoint1And2: viewAngle,
-      height: 40,
+      height: 80,
+      arcPercentage: arcPercentage,
+    );
+    final frontFacePathPoints = getPointsForFrontFacePolygon(
+      origin: topPlaneOriginPoint,
+      xProjectionLength: widthMidPoint,
+      angleOfPoint1And2: viewAngle,
+      height: 80,
       arcPercentage: arcPercentage,
     );
 
     final topPlanePath = _getPathForPoints(topSidePathPoints);
     final leftSidePath = _getPathForPoints(leftSidePathPoints);
     final rightSidePath = _getPathForPoints(rightSidePathPoints);
+    final frontFacePath = _getPathForPoints(frontFacePathPoints);
 
     final planePainter = Paint()
       ..shader = ui.Gradient.linear(
+        topSidePathPoints[0].$1,
         topSidePathPoints[3].$1,
-        topSidePathPoints[1].$1,
         [Color(0xFFE5D5FF), Color(0xFFBDCBFD)],
       )
       ..style = .fill;
@@ -131,11 +139,18 @@ class PaintBarGraph extends CustomPainter {
     );
     canvas.drawPath(leftSidePath, planePainter);
     planePainter.shader = ui.Gradient.linear(
-      leftSidePathPoints[1].$1,
-      leftSidePathPoints[0].$1,
+      rightSidePathPoints[1].$1,
+      rightSidePathPoints[0].$1,
       [Color(0xFF5844D7), Color(0xFF6580E1)],
     );
     canvas.drawPath(rightSidePath, planePainter);
+
+    planePainter.shader = ui.Gradient.linear(
+      frontFacePathPoints[3].$1,
+      frontFacePathPoints[0].$1,
+      [Color(0xFF5844D7), Color(0xFF6580E1)],
+    );
+    canvas.drawPath(frontFacePath, planePainter);
 
     // canvas.drawRRect(RRect.fromRectAndCorners(Rect.fromPoints(a, b)), paint)
     // final rectPainter = Paint();
@@ -315,5 +330,43 @@ List<(Offset, _PathType, Offset?)> getPointsForRightSidePolygon({
     (thirdPoint, .line, null),
     (fourthPoint, .line, null),
     (shiftedOrigin, .line, null),
+  ];
+}
+
+/// Front face that connects the inner edges of left and right side faces
+List<(Offset, _PathType, Offset?)> getPointsForFrontFacePolygon({
+  required Offset origin,
+  required double xProjectionLength,
+  required double angleOfPoint1And2,
+  required double height,
+  required double arcPercentage,
+}) {
+  final arcDiameter = xProjectionLength * (arcPercentage / 100);
+
+  // Top corners (match the inner edges of top plane's bottom corner)
+  final topRight = _getAngledOffset(origin, arcDiameter, angleOfPoint1And2);
+  final topLeft = _getAngledOffset(
+    origin,
+    arcDiameter,
+    180 - angleOfPoint1And2,
+  );
+
+  // Bottom corners
+  final bottomRight = topRight + Offset(0, height);
+  final bottomLeft = topLeft + Offset(0, height);
+
+  // Control point for bottom arc (the sharp corner that would be at origin + height)
+  final bottomCorner = origin + Offset(0, height);
+
+  return [
+    (topRight, .line, null),
+    (bottomRight, .line, null),
+    (bottomLeft, .arc, bottomCorner), // Arc around bottom corner
+    (topLeft, .line, null),
+    (
+      topRight,
+      .arc,
+      origin,
+    ), // Arc around top corner (matches top plane's bottom arc)
   ];
 }
