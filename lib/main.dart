@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 void main() {
   runApp(const MyApp());
@@ -37,10 +37,7 @@ class MyApp extends StatelessWidget {
           child: Container(
             clipBehavior: .antiAlias,
             decoration: BoxDecoration(),
-            child: const CustomPaint(
-              painter: PaintBarGraph(),
-              size: Size(200, 200),
-            ),
+            child: CustomPaint(painter: PaintBarGraph(), size: Size(200, 200)),
           ),
         ),
       ),
@@ -49,39 +46,66 @@ class MyApp extends StatelessWidget {
 }
 
 class PaintBarGraph extends CustomPainter {
-  const PaintBarGraph();
+  PaintBarGraph();
+
+  final backGroundPaint = Paint()
+    ..color = .fromRGBO(0, 0, 0, 0.05)
+    ..strokeWidth = 2
+    ..style = .stroke;
+
   @override
   void paint(Canvas canvas, Size size) {
+    const double viewAngle = 15;
     final widthMidPoint = size.width / 2;
-    final heightMidPoint = size.height / 2;
-    final backGroundPaint = Paint();
-    const double strokeWidth = 2;
-    backGroundPaint
-      ..color = .fromRGBO(0, 0, 0, 0.05)
-      ..strokeWidth = strokeWidth
-      ..style = .stroke;
+
     for (var y in List.generate(
       5,
       (idx) =>
-          ((size.height - 5 * strokeWidth) / 4) * idx +
-          strokeWidth / 2 +
-          strokeWidth * idx,
+          ((size.height - 5 * backGroundPaint.strokeWidth) / 4) * idx +
+          backGroundPaint.strokeWidth / 2 +
+          backGroundPaint.strokeWidth * idx,
     )) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), backGroundPaint);
     }
 
-    final groundPainter = Paint();
+    // final groundPainter = Paint();
+    // final groundPlaneY =
+    //     size.height - _getAdjacentForOpposite(viewAngle, widthMidPoint);
+    final groundOriginPoint = Offset(widthMidPoint, size.height - 40);
+    // canvas.drawLine(
+    //   groundOriginPoint,
+    //   _getAngledOffset(groundOriginPoint, widthMidPoint, -viewAngle),
+    //   groundPainter,
+    // );
+    // canvas.drawLine(
+    //   groundOriginPoint,
+    //   _getAngledOffset(groundOriginPoint, widthMidPoint, (180 + viewAngle)),
+    //   groundPainter,
+    // );
+    List<Offset> points = getPointsForPolygon(
+      groundOriginPoint,
+      widthMidPoint,
+      viewAngle,
+    );
 
-    canvas.drawLine(
-      Offset(widthMidPoint, size.height),
-      Offset(size.width, _getAdjacentForOpposite(45, widthMidPoint)),
-      groundPainter,
-    );
-    canvas.drawLine(
-      Offset(widthMidPoint, size.height),
-      Offset(size.width, _getAdjacentForOpposite(135, widthMidPoint)),
-      groundPainter,
-    );
+    final planePath = Path();
+    if (points.isNotEmpty) {
+      planePath.moveTo(points.first.dx, points.first.dy);
+      for (int i = 1; i < points.length; i++) {
+        planePath.lineTo(points[i].dx, points[i].dy);
+      }
+      planePath.close();
+    }
+
+    final planePainter = Paint()
+      ..shader = ui.Gradient.linear(points[3], points[1], [
+        Color(0xFFE5D5FF),
+        Color(0xFFBDCBFD),
+      ])
+      ..style = .fill;
+    canvas.drawPath(planePath, planePainter);
+
+    // canvas.drawRRect(RRect.fromRectAndCorners(Rect.fromPoints(a, b)), paint)
     // final rectPainter = Paint();
   }
 
@@ -93,6 +117,29 @@ double _degToRadian(double degree) {
   return degree * math.pi / 180;
 }
 
-double _getAdjacentForOpposite(double angle, double oppositeLength) {
-  return oppositeLength * math.tan(_degToRadian(angle));
+Offset _getAngledOffset(Offset origin, double oppositeLength, double angle) {
+  final radiansAngle = _degToRadian(angle);
+  final distance = (oppositeLength / math.cos(radiansAngle)).abs();
+  return Offset(
+    origin.dx + distance * math.cos(radiansAngle),
+    origin.dy - distance * math.sin(radiansAngle),
+  );
+}
+
+List<Offset> getPointsForPolygon(
+  Offset origin,
+  double xProjectionLength,
+  double angleOfPoint1And2,
+) {
+  return [
+    origin,
+    _getAngledOffset(origin, xProjectionLength, angleOfPoint1And2),
+    origin -
+        Offset(
+          0,
+          2 * math.tan(_degToRadian(angleOfPoint1And2)) * xProjectionLength,
+        ),
+    _getAngledOffset(origin, xProjectionLength, 180 - angleOfPoint1And2),
+    origin,
+  ];
 }
